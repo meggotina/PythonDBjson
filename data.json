@@ -1,0 +1,58 @@
+[
+    {
+        "id": 1,
+        "date": "05-01-2023 16:35",
+        "pressure": 22.0,
+        "mass flow": 111.0,
+        "temperature": 222.0
+    },
+    {
+        "id": 2,
+        "date": "05-01-2023 17:42",
+        "pressure": 22.0,
+        "mass flow": 23.0,
+        "temperature": 33.0
+    },
+    {
+        "id": 3,
+        "date": "05-01-2023 19:11",
+        "pressure": "33",
+        "mass flow": 34.0,
+        "temperature": 123.0
+    },
+    {
+        "id": 4,
+        "date": "05-01-2023 19:15",
+        "pressure": 33.0,
+        "mass flow": 123.0,
+        "temperature": 123.0
+    },
+    {
+        "id": 5,
+        "date": "05-01-2023 19:32",
+        "pressure": 1233.0,
+        "mass flow": 1444.0,
+        "temperature": 444.0
+    },
+    {
+        "id": 6,
+        "date": "06-01-2023 10:39",
+        "pressure": 213.0,
+        "mass flow": 32.0,
+        "temperature": 23.0
+    },
+    {
+        "id": 7,
+        "date": "06-01-2023 10:46",
+        "pressure": "333",
+        "mass flow": "3332",
+        "temperature": "41"
+    },
+    {
+        "id": 8,
+        "date": "06-01-2023 10:39",
+        "pressure": 213.0,
+        "mass flow": 32.0,
+        "temperature": 23.0
+    }
+]
