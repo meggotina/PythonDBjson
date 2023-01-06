@@ -1,9 +1,13 @@
 import json
 import time
 import datetime
+import requests
+import openpyxl
 
 # Load the data from the JSON file, or initialize an empty list if the file doesn't exist
 filename = 'data.json'
+server_url = "http://localhost:8000"
+
 try:
     with open(filename, 'r') as f:
         data = json.load(f)
@@ -127,6 +131,121 @@ def edit_object():
     print("Object not found")
 
 
+def sync_data():
+    # Make a GET request to the server to get the data from the server
+    response = requests.get(server_url)
+
+    # Check the status code of the response
+    if response.status_code == 200:
+        # If the request is successful, get the data from the response
+        server_data = response.json()
+
+        # Open the local JSON file
+        with open("data.json", "r") as f:
+            # Read the contents of the file
+            file_data = json.load(f)
+
+        # Compare the data in the server with the data in the file
+        if server_data != file_data:
+            # If the data is different, ask the user if they want to overwrite the local data with the data from the
+            # server
+            answer = input("The data in the server is different from the data in the file. Do you want to overwrite "
+                           "the local data with the data from the server? (y/n) ")
+            if answer.lower() == "y":
+                # If the user wants to overwrite the local data, make a POST request to the server to update the data
+                response = requests.post(server_url, json=server_data)
+
+                # Check the status code of the response
+                if response.status_code == 200:
+                    # If the request is successful, save the data from the server to the local file
+                    with open("data.json", "w") as f:
+                        json.dump(server_data, f)
+                else:
+                    print("Error updating data:", response.status_code)
+            elif answer.lower() == "n":
+                # If the user does not want to overwrite the local data, ask if they want to update the server with
+                # the local data
+                answer = input("Do you want to update the server with the local data? (y/n) ")
+                if answer.lower() == "y":
+                    # If the user wants to update the server with the local data, make a POST request to the server
+                    # to update the data
+                    response = requests.post(server_url, json=file_data)
+
+                    # Check the status code of the response
+                    if response.status_code == 200:
+                        print("Data updated successfully")
+                    else:
+                        print("Error updating data:", response.status_code)
+                else:
+                    print("Data not updated")
+        else:
+            print("Data is already up to date")
+    else:
+        print("Error getting data from server:", response.status_code)
+
+
+def convert_to_excel(json_filename):
+    # Load the data from the JSON file
+    with open(json_filename, "r") as f:
+        data = json.load(f)
+
+    # Create a new workbook
+    workbook = openpyxl.Workbook()
+    # Get the active worksheet
+    worksheet = workbook.active
+
+    # Get the keys from the first object in the data list
+    keys = list(data[0].keys())
+    # Write the keys to the worksheet as the column headers
+    worksheet.append(keys)
+
+    # Iterate over the data and write each row to the worksheet
+    for row in data:
+        worksheet.append([row[key] for key in keys])
+
+    # Prompt the user for the name of the Excel file to save
+    excel_filename = input("Enter the name of the Excel file to save: ")
+    # Save the workbook
+    workbook.save(excel_filename + ".xlsx")
+
+    # Print a message indicating that the conversion was successful
+    print(f"Successfully converted {len(data)} rows of data from '{json_filename}' to '{excel_filename}'.")
+
+
+def convert_to_json():
+    # Get the name of the Excel file to be converted
+    excel_filename = input("Enter the name of the Excel file to be converted: ")
+    # Get the name of the JSON file to update
+    json_filename = input("Enter the name of the JSON file to update: ")
+
+    # Load the workbook from the Excel file
+    workbook = openpyxl.load_workbook(excel_filename)
+    # Get the active worksheet
+    worksheet = workbook.active
+
+    # Get the names of the columns from the first row of the worksheet
+    columns = [cell.value for cell in worksheet[1]]
+
+    # Create a new list to store the data
+    data = []
+    # Iterate over the rows of the worksheet, starting from the second row (row 1)
+    for row in worksheet.iter_rows(min_row=2):
+        # Create a new dictionary to store the data for this row
+        row_data = {}
+        # Iterate over the cells in the row
+        for cell, column in zip(row, columns):
+            # Add the data from the cell to the row_data dictionary
+            row_data[column] = cell.value
+        # Add the row_data dictionary to the data list
+        data.append(row_data)
+
+    # Open the JSON file in write mode
+    with open(json_filename, "w") as f:
+        # Write the data to the JSON file, overwriting its contents
+        json.dump(data, f, indent=4)
+    print(f"Successfully converted {len(data)} rows of data from '{excel_filename}' to '{json_filename}'.")
+
+
 # Main loop
 while True:
     print("\nEnter a command:")
@@ -136,7 +255,10 @@ while True:
     print("4. Sort data")
     print("5. List all data")
     print("6. Edit object")
-    print("7. Quit")
+    print("7. Get data from server")
+    print("8. Convert file to Excel")
+    print("9. Convert Excel file to json")
+    print("0. Quit")
     command = input("> ")
     if command == '1':
         add_object()
@@ -151,6 +273,12 @@ while True:
     elif command == '6':
         edit_object()
     elif command == '7':
+        sync_data()
+    elif command == '8':
+        convert_to_excel(filename)
+    elif command == '9':
+        convert_to_json()
+    elif command == '0':
         break
     else:
         print("Invalid command")
