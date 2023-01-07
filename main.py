@@ -278,6 +278,8 @@ while True:
         convert_to_excel(filename)
     elif command == '9':
         convert_to_json()
+        with open("data.json", "r") as f:
+            data = json.load(f)
     elif command == '0':
         break
     else:
