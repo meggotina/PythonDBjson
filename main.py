@@ -21,18 +21,51 @@ id_counter = max([obj['id'] for obj in data], default=0)
 def add_object():
     global id_counter
     id_counter += 1
-    now = datetime.datetime.now()
-    date = f"{now.day:02d}-{now.month:02d}-{now.year:02d} {now.hour:02d}:{now.minute:02d}"
-    pressure = float(input("Pressure: "))
-    mass_flow = float(input("Mass flow: "))
-    temperature = float(input("Temperature: "))
-    data.append({
+    date = None
+
+    if not data:
+        id_counter = 1
+        include_date = input("Do you want to include a date with this object? (y/n) ")
+        if include_date.lower() == "y":
+            now = datetime.datetime.now()
+            date = f"{now.day:02d}-{now.month:02d}-{now.year:02d} {now.hour:02d}:{now.minute:02d}"
+
+    if not data:
+        # If the data list is empty, prompt the user to enter the keys
+        keys = input("Enter keys for new object (comma-separated): ").split(",")
+        keys = [key.strip() for key in keys]
+    else:
+        # If the data list is not empty, use the keys from the first object
+        keys = list(data[0].keys())
+
+    # Create a new dictionary for the object
+    new_object = {
         'id': id_counter,
-        'date': date,
-        'pressure': pressure,
-        'mass flow': mass_flow,
-        'temperature': temperature
-    })
+
+    }
+
+    if date is not None:
+        new_object['date'] = date
+
+    # Prompt the user to enter values for each key
+    for key in keys:
+        if key == "id" or key == "date":
+            continue
+        value = input(f"{key}: ")
+        try:
+            # Try to convert the value to an integer
+            value = int(value)
+        except ValueError:
+            try:
+                # If the value is not an integer, try to convert it to a float
+                value = float(value)
+            except ValueError:
+                # If the value is not a number, leave it as a string
+                pass
+        new_object[key] = value
+
+    # Append the new object to the data list
+    data.append(new_object)
     print(f"Object added with ID {id_counter}")
     check_ids()
     save_data()
@@ -124,7 +157,19 @@ def edit_object():
             for key in obj.keys():
                 if key == 'id':
                     continue
-                obj[key] = input(f"{key}: ") or obj[key]
+                new_value = input(f"{key}: ")
+                if new_value:
+                    # Check if the new value is a number
+                    if new_value.isdigit():
+                        # If the original value is a float, update it with a float
+                        if isinstance(obj[key], float):
+                            obj[key] = float(new_value)
+                        # Otherwise, update it with an integer
+                        else:
+                            obj[key] = int(new_value)
+                    # If the new value is not a number, update it with a string
+                    else:
+                        obj[key] = new_value
             save_data()
             print("Object updated")
             return
