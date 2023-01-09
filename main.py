@@ -24,24 +24,23 @@ def add_object():
     date = None
 
     if not data:
+        # If the data list is empty, prompt the user to enter the keys
+        keys = input("Enter keys for new object (comma-separated): ").split(",")
+        keys = [key.strip() for key in keys]
         id_counter = 1
         include_date = input("Do you want to include a date with this object? (y/n) ")
         if include_date.lower() == "y":
             now = datetime.datetime.now()
             date = f"{now.day:02d}-{now.month:02d}-{now.year:02d} {now.hour:02d}:{now.minute:02d}"
-
-    if not data:
-        # If the data list is empty, prompt the user to enter the keys
-        keys = input("Enter keys for new object (comma-separated): ").split(",")
-        keys = [key.strip() for key in keys]
     else:
         # If the data list is not empty, use the keys from the first object
         keys = list(data[0].keys())
+        if 'date' in data[0]:
+            date = data[0]['date']
 
     # Create a new dictionary for the object
     new_object = {
         'id': id_counter,
-
     }
 
     if date is not None:
@@ -52,16 +51,14 @@ def add_object():
         if key == "id" or key == "date":
             continue
         value = input(f"{key}: ")
-        try:
-            # Try to convert the value to an integer
-            value = int(value)
-        except ValueError:
-            try:
-                # If the value is not an integer, try to convert it to a float
+        if data and key in data[0]:
+            # If the data list is not empty and the key is present in the first object, use the same type as the
+            # value in the first object
+            value_type = type(data[0][key])
+            if value_type == int:
+                value = int(value)
+            elif value_type == float:
                 value = float(value)
-            except ValueError:
-                # If the value is not a number, leave it as a string
-                pass
         new_object[key] = value
 
     # Append the new object to the data list
