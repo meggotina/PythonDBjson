@@ -3,6 +3,7 @@ import time
 import datetime
 import requests
 import openpyxl
+import gzip
 
 # Load the data from the JSON file, or initialize an empty list if the file doesn't exist
 filename = 'data.json'
@@ -181,6 +182,42 @@ def save_data():
         json.dump(data, f, indent=4)
 
 
+def float_hook(obj):
+    try:
+        return float(obj)
+    except (TypeError, ValueError):
+        return obj
+
+
+def parse_constant(constant):
+    if constant == "NaN":
+        return float("nan")
+    elif constant == "Infinity":
+        return float("inf")
+    elif constant == "-Infinity":
+        return float("-inf")
+    else:
+        return float(constant)
+
+
+def compress_json_file(input_file, output_file):
+    with open(input_file, 'r') as f_in:
+        json_str = f_in.read()
+        json_obj = json.loads(json_str)
+        json_bytes = json.dumps(json_obj).encode('utf-8')
+
+    with gzip.open(output_file, 'wb') as f_out:
+        f_out.write(json_bytes)
+
+
+def decompress_json_file(input_file, output_file):
+    with gzip.open(input_file, 'rb') as f_in:
+        json_data = f_in.read()
+        json_obj = json.loads(json_data, parse_float=lambda x:float(x), object_hook=lambda x: float(x) if isinstance(x, str) and x.replace('.','',1).isdigit() else x)
+    with open(output_file, 'w') as f_out:
+        json.dump(json_obj, f_out, indent= 0)
+
+
 def edit_object():
     id_to_edit = input("Enter ID of object to edit: ")
     for obj in data:
@@ -323,7 +360,7 @@ def convert_to_json():
     # Open the JSON file in write mode
     with open(json_filename, "w") as f:
         # Write the data to the JSON file, overwriting its contents
-        json.dump(data, f, indent=4, default=str)
+        json.dump(data, f, indent=0, default=str)
     print(f"Successfully converted {len(data)} rows of data from '{excel_filename}' to '{json_filename}'.")
 
 
@@ -363,6 +400,11 @@ while True:
             data = json.load(f)
     elif command == '0':
         break
+    elif command == '10':
+        compress_json_file("data.json", "D#2019-07-01compressed.json")
+    elif command == '11':
+        decompress_json_file("D#2019-07-01compressed.json", "D#2019-07-01DEcompressed.json")
+
     else:
         print("Invalid command")
 
