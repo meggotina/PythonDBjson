@@ -15,7 +15,10 @@ except FileNotFoundError:
     data = []
 
 # ID counter
-id_counter = max([obj['id'] for obj in data], default=0)
+if 'id' in data[0]:
+    id_counter = max([obj['id'] for obj in data], default=1)
+else:
+    id_counter = 1
 
 
 def add_object():
@@ -27,7 +30,7 @@ def add_object():
         # If the data list is empty, prompt the user to enter the keys
         keys = input("Enter keys for new object (comma-separated): ").split(",")
         keys = [key.strip() for key in keys]
-        id_counter = 1
+
         include_date = input("Do you want to include a date with this object? (y/n) ")
         if include_date.lower() == "y":
             now = datetime.datetime.now()
@@ -53,19 +56,45 @@ def add_object():
         value = input(f"{key}: ")
         if data and key in data[0]:
             # If the data list is not empty and the key is present in the first object, use the same type as the
-            # value in the first object
+            # value in the first object. If value type is different from the original object, try to find suitable type
             value_type = type(data[0][key])
-            if value_type == int:
+            try:
+                if value_type == int:
+                    value = int(value)
+                elif value_type == float:
+                    value = float(value)
+                elif value_type == str:
+                    value = str(value)
+            except:
+                try:
+                    value = int(value)
+                except:
+                    try:
+                        value = float(value)
+                    except:
+                        value = str(value)
+        else:
+            try:
                 value = int(value)
-            elif value_type == float:
-                value = float(value)
+            except:
+                try:
+                    value = float(value)
+                except:
+                    value = str(value)
+
         new_object[key] = value
 
     # Append the new object to the data list
     data.append(new_object)
-    print(f"Object added with ID {id_counter}")
+    assign_id()
     check_ids()
     save_data()
+
+    for obj in data:
+        id_number = obj.pop('id')
+        obj.update({'id': id_number})
+
+    print(f"Object added {max([obj['id'] for obj in data], default=1)}")
 
 
 def search_objects():
@@ -123,6 +152,12 @@ def check_ids():
     for i, obj in enumerate(data):
         if obj['id'] != i + 1:
             obj['id'] = i + 1
+
+
+def assign_id():
+    if 'id' not in data[0]:
+        for i, obj in enumerate(data):
+            obj["id"] = i
 
 
 def sort_data():
@@ -226,32 +261,36 @@ def sync_data():
         print("Error getting data from server:", response.status_code)
 
 
-def convert_to_excel(json_filename):
+def convert_to_excel():
     # Load the data from the JSON file
-    with open(json_filename, "r") as f:
+    with open(filename, "r") as f:
         data = json.load(f)
 
-    # Create a new workbook
-    workbook = openpyxl.Workbook()
-    # Get the active worksheet
-    worksheet = workbook.active
+    # If file opened successfully, convert it, if not - print the message
+    if data:
+        # Create a new workbook
+        workbook = openpyxl.Workbook()
+        # Get the active worksheet
+        worksheet = workbook.active
 
-    # Get the keys from the first object in the data list
-    keys = list(data[0].keys())
-    # Write the keys to the worksheet as the column headers
-    worksheet.append(keys)
+        # Get the keys from the first object in the data list
+        keys = list(data[0].keys())
+        # Write the keys to the worksheet as the column headers
+        worksheet.append(keys)
 
-    # Iterate over the data and write each row to the worksheet
-    for row in data:
-        worksheet.append([row[key] for key in keys])
+        # Iterate over the data and write each row to the worksheet
+        for row in data:
+            worksheet.append([row[key] for key in keys])
 
-    # Prompt the user for the name of the Excel file to save
-    excel_filename = input("Enter the name of the Excel file to save: ")
-    # Save the workbook
-    workbook.save(excel_filename + ".xlsx")
+        # Prompt the user for the name of the Excel file to save
+        excel_filename = input("Enter the name of the Excel file to save: ")
+        # Save the workbook
+        workbook.save(excel_filename + ".xlsx")
 
-    # Print a message indicating that the conversion was successful
-    print(f"Successfully converted {len(data)} rows of data from '{json_filename}' to '{excel_filename}'.")
+        # Print a message indicating that the conversion was successful
+        print(f"Successfully converted {len(data)} rows of data from '{filename}' to '{excel_filename}'.")
+    else:
+        print("This file is empty")
 
 
 def convert_to_json():
@@ -284,7 +323,7 @@ def convert_to_json():
     # Open the JSON file in write mode
     with open(json_filename, "w") as f:
         # Write the data to the JSON file, overwriting its contents
-        json.dump(data, f, indent=4)
+        json.dump(data, f, indent=4, default=str)
     print(f"Successfully converted {len(data)} rows of data from '{excel_filename}' to '{json_filename}'.")
 
 
@@ -317,7 +356,7 @@ while True:
     elif command == '7':
         sync_data()
     elif command == '8':
-        convert_to_excel(filename)
+        convert_to_excel()
     elif command == '9':
         convert_to_json()
         with open("data.json", "r") as f:
